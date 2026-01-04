@@ -1,0 +1,5 @@
+# Start listening on internal VM ip address
+mosquitto_sub -h 127.0.0.1 -p 1883 -u "your_username" -P "your_password" -t "test/local" -v
+
+# Start publishing on internal VM ip address
+mosquitto_pub -h 127.0.0.1 -p 1883 -u "your_username" -P "your_password" -t "test/local" -m "Local test working!"
