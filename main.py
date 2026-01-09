@@ -3,6 +3,7 @@ import time
 import ntptime
 import ssl
 from umqtt.simple import MQTTClient
+import utime
 
 # 1. Connect to WiFi
 SSID = "Virenschleuder"
@@ -42,7 +43,7 @@ client = MQTTClient(
     server=MQTT_SERVER,
     port=8883,
     user="Philipp",
-    password="*jQsWAw%IumrNB'L",
+    password="@3Zai5$0!kP+Xt=a",
     ssl=context  # Pass the context object here, not a dict
 )
 # 4. MQTT Setup
@@ -52,6 +53,22 @@ print("Connecting to Mosquitto via TLS...")
 client.connect()
 print("Connected!")
 
-# 5. Send Data
-client.publish("test", "Hello from Secure Pico!")
-print("Message sent.")
+# Setup PIR on GP22
+pir = machine.Pin(28, machine.Pin.IN)
+
+print("Sensor stabilizing... stay still for 60 seconds")
+utime.sleep(60)  # PIR sensors need a 'warm up' period to map the room's heat
+
+while True:
+    if pir.value() == 1:
+        print("ALARM! Motion Detected!")
+        # You could trigger your Home Assistant notification here!
+        # 5. Send Data
+        client.publish("test", "Motion Detected!")
+        print("Message sent.")
+        utime.sleep(5)  # Wait a bit so we don't spam the console
+    else:
+        print("Monitoring...")
+
+    utime.sleep(1)
+
