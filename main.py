@@ -39,7 +39,7 @@ MQTT_SERVER = "34.23.79.183"
 
 # 4. Initialize the Client
 client = MQTTClient(
-    client_id="PicoW_Sensor",
+    client_id="Pico_W_Motion_Sensor",
     server=MQTT_SERVER,
     port=8883,
     user="Philipp",
@@ -56,15 +56,15 @@ print("Connected!")
 # Setup PIR on GP22
 pir = machine.Pin(28, machine.Pin.IN)
 
-print("Sensor stabilizing... stay still for 60 seconds")
-utime.sleep(60)  # PIR sensors need a 'warm up' period to map the room's heat
+print("Sensor stabilizing... stay still for 30 seconds")
+utime.sleep(30)  # PIR sensors need a 'warm up' period to map the room's heat
 
 while True:
     if pir.value() == 1:
         print("ALARM! Motion Detected!")
         # You could trigger your Home Assistant notification here!
         # 5. Send Data
-        client.publish("test", "Motion Detected!")
+        client.publish("topic/motion", "ON")
         print("Message sent.")
         utime.sleep(5)  # Wait a bit so we don't spam the console
     else:
