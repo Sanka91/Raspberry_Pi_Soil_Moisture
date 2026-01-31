@@ -85,7 +85,7 @@ while True:
     utime.sleep(10)
     print("Going into lightsleep mode")
     led.on()
-    machine.lightsleep(10000)
+    machine.lightsleep(60000)
     led.off()
 
 
