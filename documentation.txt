@@ -1,10 +1,11 @@
 # Start listening on internal VM ip address
-mosquitto_sub -h 127.0.0.1 -p 1883 -u "your_username" -P "your_password" -t "test/local" -v
+mosquitto_sub -h localhost -p 1883 -u "Philipp" -P '@3Zai5$0!kP+Xt=a' -t "#" -v
 
 # Start publishing on internal VM ip address
 mosquitto_pub -h 127.0.0.1 -p 1883 -u "your_username" -P "your_password" -t "test/local" -m "Local test working!"
 
-# Start listening on all incoming connections
-mosquitto_sub -h 34.23.79.183 -p 8883 --cafile ca.crt -u Philipp -P "password" -t "#" -d
+# Start publishing on all incoming connections on topic "test"
+sudo mosquitto_pub -h 34.23.79.183 -p 8883 --cafile /etc/mosquitto/certs/ca.crt -u "Philipp" -P '@3Zai5$0!kP+Xt=a' -t "test" -m "GeilMEGAAAAAAAAAAA"
+
 
 # Certificates are in etc/mosquitto
