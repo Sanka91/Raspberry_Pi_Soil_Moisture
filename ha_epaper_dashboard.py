@@ -13,7 +13,6 @@ def df_to_image_pyscript(df, title, filename="WaterMonitoring.png"):
     cell_width_regular = 50
     cell_height = 30
     padding = 10
-    y_start_header = 45
     y_start_table = 45
 
     font_semibold = ImageFont.truetype('fonts/Quicksand/static/Quicksand-SemiBold.ttf', size=10)
@@ -31,25 +30,25 @@ def df_to_image_pyscript(df, title, filename="WaterMonitoring.png"):
     for i, col in enumerate(df.columns):
         # First 6 columns are regular width
         if i == 0:
-            draw.text((padding + i * cell_width_regular, y_start_header),
+            draw.text((padding + i * cell_width_regular, y_start_table),
                       str(col),
                       font=font_semibold, fill=0)
             x_trailing_headers += padding + i * cell_width_regular
         if i == 1:
             x_trailing_headers += padding + cell_width_regular + 80
-            draw.text((x_trailing_headers, y_start_header), str(col),font=font_semibold, fill=0)
+            draw.text((x_trailing_headers, y_start_table), str(col),font=font_semibold, fill=0)
         if 2 <= i <= 6:
             x_trailing_headers += padding + cell_width_regular
-            draw.text((x_trailing_headers, y_start_header), str(col), font=font_semibold, fill=0)
+            draw.text((x_trailing_headers, y_start_table), str(col), font=font_semibold, fill=0)
         if i == 7:
             x_trailing_headers += padding + cell_width_regular + 150
-            draw.text((x_trailing_headers, y_start_header),
+            draw.text((x_trailing_headers, y_start_table),
                                     str(col),
                                     font=font_semibold, fill=0)
 
         # Draw a horizontal line under header row
-        draw.line([(padding, y_start_header + padding * 2),
-                   (img_width - padding, y_start_header + padding * 2)],
+        draw.line([(padding, y_start_table + padding * 2),
+                   (img_width - padding, y_start_table + padding * 2)],
                   fill=0, width=3)
 
     # 5. Draw Rows
