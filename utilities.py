@@ -1,11 +1,23 @@
 import ntptime
+import time
+import socket
+
+NTP_TIMEOUT = 5
 
 def sync_time(retries: int):
-    print("Syncing time with internet...")
+    print("--- Syncing Pico system clock via NTP ---")
     for i in range(retries):
         try:
-            # This fetches the current UTC time from pool.ntp.org and sets the Pico's internal clock
+            print(f"NTP Sync Attempt {i + 1}...")
+            ntptime.host = "pool.ntp.org"
+            ntptime.timeout = NTP_TIMEOUT
             ntptime.settime()
             print("Time synced successfully!")
+            return True
+
         except Exception as e:
-            write_log("{}: Failed to sync time:".format(time.time()) + str(e))
+            print(f"[WARN] NTP attempt {i + 1} failed: {e}")
+
+        time.sleep(2)
+
+    return False

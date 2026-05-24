@@ -1,45 +1,54 @@
-from machine import UART, Pin
-import ssl
-import utime
-import machine
+from machine import UART, Pin, ADC
+import json
+import time
 import _thread
-# from logger import write_log
+import config
 from soil_sensor import SoilSensor
-from utilities import sync_time
-from wifi_client import WifiClient
-from hive_thread_worker import add_to_publish_queue, hivemq_core1_worker
+from pump_client import PumpController
+from core1_thread import add_to_publish_queue, core1_thread, publish_lock
 
-pump_1 = Pin(15, Pin.OUT)
-# Start with relay off (active LOW)
-pump_1.value(1)
-led = Pin("LED", Pin.OUT)
-led.off()
+# Internal temperature sensor on ADC pin 4
+internal_temp_sensor = ADC(4)
 
-wifi_client = WifiClient(ssid="FRITZ!Box 7490", password="53910924776233792153")
-wifi_client.connect(retries=5)
+pump = PumpController(pin=26)
+soil_sensor = SoilSensor(baudrate=9600, tx_pin=16, rx_pin=17)
 
 # --- START THE SECOND THREAD ---
-_thread.start_new_thread(hivemq_core1_worker)
+_thread.start_new_thread(core1_thread, ())
+time.sleep(2)
 
 while True:
-    if not wifi_client.has_internet_connection():
-        wifi_client.connect(retries=5)
-        sync_time(retries=5)
+    try:
+        humidity, temp, ph = soil_sensor.request_reading()
+        int_temp_value = internal_temp_sensor.read_u16() * (3.3 / 65535)
+        # # Calculate temperature using the voltage
+        int_temp = round(27 - (int_temp_value - 0.706) / 0.001721, 1)
 
-    soil_sensor = SoilSensor(baudrate=9600, tx_pin=16, rx_pin=17)
-    humidity, temp, ph = soil_sensor.request_reading()
+        # Do not use the character ° for degrees. It's 1 byte in python but a different size in mqtt. This causes errors.
+        publish_json = json.dumps({
+            "last_reading": time.time(),
+            "temperature_celsius": temp,
+            "humidity_percent": humidity,
+            "ph": ph,
+            "watering_on_demand": config.WATERING_ON_DEMAND,
+            "watering_duration_seconds": config.WATERING_DURATION_SECONDS,
+            "humidity_threshold_percent": config.HUMIDITY_THRESHOLD_PERCENT,
+            "measurement_interval_seconds": config.MEASUREMENT_INTERVAL_SECONDS,
+            "temp_internal_celsius": int_temp
+        })
 
-    # Do not use the character ° for degrees. It's 1 byte in python but a different size in mqtt. This causes errors.
-    publish_string = f"Humidity: {humidity}" + " %" + f"Temperature: {temp}" + " C" + f"pH: {ph}"
+        print(publish_json)
+        print("--------------------------------------\n")
 
-    add_to_publish_queue("Raised_Bed/Blue", publish_string)
+        add_to_publish_queue("Raised_Bed/Blue", publish_json.encode('utf-8'))
 
+        if humidity <= config.HUMIDITY_THRESHOLD_PERCENT or config.WATERING_ON_DEMAND:
+            pump.run_for_duration(seconds=config.WATERING_DURATION_SECONDS)
+            # After watering, we reset the on-demand flag to prevent continuous watering.
+            config.WATERING_ON_DEMAND = False
 
-    pump_1.value(0)
-    print("Relay is on")
-    time.sleep(5)
+        time.sleep(config.MEASUREMENT_INTERVAL_SECONDS)
+    except Exception as e:
+        print("[Core 0]: Problem in main loop: {}".format(e))
+        time.sleep(config.MEASUREMENT_INTERVAL_SECONDS)
 
-    pump_1.value(1)
-    print("Relay is off")
-    led.off()
-    time.sleep(5)

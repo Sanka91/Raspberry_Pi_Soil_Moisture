@@ -1,5 +1,5 @@
-from logger import write_log
 import time
+from machine import UART, Pin
 
 class SoilSensor:
     # https://wiki.dfrobot.com/sen0602/#tech_specs
@@ -9,28 +9,28 @@ class SoilSensor:
 
     def __init__(self, baudrate, tx_pin, rx_pin, timeout=500):
         self._uart = UART(0, baudrate=baudrate, tx=Pin(tx_pin), rx=Pin(rx_pin), timeout=timeout)
-        print("Initializing 3-in-1 Sensor... \n")
-        print("UART Config: Baudrate={}, TX Pin={}, RX Pin={}, Timeout={}ms".format(baudrate, tx_pin, rx_pin, timeout))
+        print("--- Initializing 3-in-1 Sensor ---")
+        print("UART Config: Baudrate={}, TX Pin={}, RX Pin={}, Timeout={}ms \n".format(baudrate, tx_pin, rx_pin, timeout))
+        print("-------------------------------------- \n")
         pass
 
     # Returns a tuple of (humidity, temperature, pH) or None if reading fails
-    @staticmethod
-    def request_reading() -> tuple:
-        uart.write(_inquiry_frame)
+    def request_reading(self) -> tuple:
+        self._uart.write(self._inquiry_frame)
         time.sleep(0.3)
-        if uart.any():
-            response = uart.read()
-            if is_valid_response(response):
+        if self._uart.any():
+            response = self._uart.read()
+            if self._is_valid_response(response):
                 # Standard response: [Addr][Func][ByteCount][Hum_H][Hum_L][Temp_H][Temp_L][Empty_H][Empty_L][PH_H][PH_L][CRC_L][CRC_H]
-                if len(data) < 13:
+                if len(response) < 13:
                     return None
 
                 # 1. Humidity (Bytes 3 & 4) -> Value / 10
-                hum_raw = (data[3] << 8) | data[4]
+                hum_raw = (response[3] << 8) | response[4]
                 humidity = hum_raw / 10.0
 
                 # 2. Temperature (Bytes 5 & 6) -> Signed Value / 10
-                temp_raw = (data[5] << 8) | data[6]
+                temp_raw = (response[5] << 8) | response[6]
                 # Handle negative temperatures using two's complement
                 if temp_raw > 0x7FFF:
                     temp_raw -= 0x10000
@@ -38,12 +38,10 @@ class SoilSensor:
 
                 # 3. pH (Bytes 9 & 10) -> Value / 10
                 # Per your manual: 0x38 (56) = 5.6 pH
-                ph_raw = (data[9] << 8) | data[10]
+                ph_raw = (response[9] << 8) | response[10]
                 ph = ph_raw / 10.0
 
                 return humidity, temperature, ph
-        else:
-            write_log("{}: No response from sensor...".format(time.time()))
         return None
 
     # Verify basic Modbus structure before decoding
